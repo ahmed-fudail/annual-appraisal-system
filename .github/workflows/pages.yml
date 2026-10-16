@@ -1,0 +1,45 @@
+name: نشر موقع التقييمات السنوية
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: جلب المصدر
+        uses: actions/checkout@v4
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: بناء الموقع
+        run: npm ci && npm run build
+        env:
+          VITE_BASE: /annual-appraisal-system/
+      - name: رفع ملفات الموقع
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: نشر GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
